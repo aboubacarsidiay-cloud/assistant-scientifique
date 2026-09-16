@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Assistant Scientifique — Classe</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e0e14; --bg2: #15151f; --bg3: #1c1c2a;
+    --border: rgba(255,255,255,0.08); --border2: rgba(255,255,255,0.14);
+    --text: #e8e8f0; --text2: #9090a8; --text3: #5a5a72;
+    --math: #a78bfa; --math-bg: rgba(167,139,250,0.1); --math-border: rgba(167,139,250,0.3);
+    --spc: #34d399; --spc-bg: rgba(52,211,153,0.1); --spc-border: rgba(52,211,153,0.3);
+    --snt: #60a5fa; --snt-bg: rgba(96,165,250,0.1); --snt-border: rgba(96,165,250,0.3);
+    --err: #f87171; --err-bg: rgba(248,113,113,0.1); --accent: #a78bfa;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Sora', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
+  header { padding: 1.25rem 2rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 1rem; background: var(--bg2); position: sticky; top: 0; z-index: 10; }
+  .logo { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, var(--math), var(--snt)); display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  header h1 { font-size: 17px; font-weight: 600; }
+  header p { font-size: 12px; color: var(--text3); margin-top: 1px; }
+  .header-right { margin-left: auto; font-size: 11px; color: var(--text3); display: flex; align-items: center; gap: 6px; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--spc); }
+  .app { display: flex; flex: 1; overflow: hidden; height: calc(100vh - 65px); }
+  .sidebar { width: 240px; flex-shrink: 0; background: var(--bg2); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 1rem 0; overflow-y: auto; }
+  .sidebar-section { padding: 0 1rem; margin-bottom: 1.5rem; }
+  .sidebar-label, .quick-label { font-size: 10px; font-weight: 600; letter-spacing: 1.5px; color: var(--text3); text-transform: uppercase; margin-bottom: 8px; }
+  .quick-label { padding: 0 1rem; }
+  .subject-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 500; color: var(--text2); border: 1px solid transparent; margin-bottom: 2px; }
+  .subject-item:hover { background: var(--bg3); color: var(--text); }
+  .subject-item.active-all { background: rgba(255,255,255,0.05); color: var(--text); border-color: var(--border2); }
+  .subject-item.active-math { background: var(--math-bg); color: var(--math); border-color: var(--math-border); }
+  .subject-item.active-spc { background: var(--spc-bg); color: var(--spc); border-color: var(--spc-border); }
+  .subject-item.active-snt { background: var(--snt-bg); color: var(--snt); border-color: var(--snt-border); }
+  .sidebar-divider { height: 1px; background: var(--border); margin: 0 1rem 1.5rem; }
+  .quick-item { padding: 7px 1.25rem; font-size: 12px; color: var(--text2); cursor: pointer; border-left: 2px solid transparent; }
+  .quick-item:hover { color: var(--text); border-left-color: var(--accent); background: rgba(255,255,255,0.03); }
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .chat-area { flex: 1; overflow-y: auto; padding: 1.5rem; display: flex; flex-direction: column; gap: 1.25rem; }
+  .msg { display: flex; gap: 12px; align-items: flex-start; }
+  .msg.user { flex-direction: row-reverse; }
+  .avatar { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
+  .avatar.ai { background: linear-gradient(135deg, rgba(167,139,250,0.2), rgba(96,165,250,0.2)); border: 1px solid var(--border2); }
+  .avatar.user { background: var(--bg3); border: 1px solid var(--border); }
+  .msg-content { max-width: 75%; }
+  .tag { display: inline-block; font-size: 10px; font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase; padding: 2px 8px; border-radius: 4px; margin-bottom: 6px; }
+  .tag-math { background: var(--math-bg); color: var(--math); }
+  .tag-spc { background: var(--spc-bg); color: var(--spc); }
+  .tag-snt { background: var(--snt-bg); color: var(--snt); }
+  .tag-ai, .tag-user { background: rgba(255,255,255,0.05); color: var(--text3); }
+  .tag-err { background: var(--err-bg); color: var(--err); }
+  .bubble { padding: 12px 16px; border-radius: 12px; font-size: 14px; line-height: 1.7; border: 1px solid var(--border); }
+  .bubble.ai { background: var(--bg2); border-top-left-radius: 3px; }
+  .bubble.user { background: var(--bg3); border-top-right-radius: 3px; }
+  .bubble.loading { opacity: 0.5; font-style: italic; color: var(--text2); }
+  .bubble.error { background: var(--err-bg); border-color: rgba(248,113,113,0.2); color: var(--err); }
+  .bubble strong { font-weight: 600; }
+  .bubble code { font-family: 'JetBrains Mono', monospace; font-size: 12px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 4px; color: var(--snt); }
+  .bubble pre { background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin: 8px 0; overflow-x: auto; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text2); }
+  .input-area { padding: 1rem 1.5rem 1.25rem; border-top: 1px solid var(--border); background: var(--bg2); }
+  .input-subject-bar { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+  .mini-btn { padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 500; cursor: pointer; border: 1px solid var(--border); background: transparent; color: var(--text3); font-family: 'Sora', sans-serif; }
+  .mini-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(167,139,250,0.08); }
+  .input-row { display: flex; gap: 10px; align-items: flex-end; }
+  textarea { flex: 1; padding: 12px 16px; background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-family: 'Sora', sans-serif; font-size: 14px; resize: none; outline: none; max-height: 120px; }
+  .send-btn { width: 44px; height: 44px; border-radius: 10px; border: none; background: var(--accent); color: white; cursor: pointer; font-size: 18px; }
+  .send-btn:disabled { background: var(--bg3); color: var(--text3); }
+  .welcome { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem; text-align: center; gap: 1rem; }
+  .welcome p { font-size: 14px; color: var(--text2); max-width: 420px; line-height: 1.6; }
+  .welcome-cards { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+  .welcome-card { padding: 12px 18px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg2); cursor: pointer; font-size: 13px; color: var(--text2); text-align: left; max-width: 180px; }
+  .setup-box { background: var(--bg2); color: var(--text2); border: 1px solid var(--border2); padding: 14px; border-radius: 10px; font-size: 13px; max-width: 520px; text-align: left; }
+  .setup-box input { width: 100%; margin: 8px 0; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border2); background: var(--bg3); color: var(--text); font-family: inherit; }
+  .setup-box button { width: 100%; padding: 8px; border: none; border-radius: 8px; background: var(--accent); color: #fff; cursor: pointer; font-family: inherit; }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">🔬</div>
+  <div>
+    <h1>Assistant Scientifique</h1>
+    <p>Mathématiques · SPC · SNT — version classe</p>
+  </div>
+  <div class="header-right">
+    <div class="dot"></div> Prêt
+    <button onclick="newChat()" style="margin-left:10px;background:transparent;border:1px solid var(--border);color:var(--text3);padding:5px 10px;border-radius:6px;font-size:11px;cursor:pointer;font-family:'Sora',sans-serif;">Nouveau chat</button>
+  </div>
+</header>
+
+<div class="app">
+  <div class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Matières</div>
+      <div class="subject-item active-all" onclick="setSubject('all',this)" id="s-all"><span>🌐</span> Toutes matières</div>
+      <div class="subject-item" onclick="setSubject('math',this)" id="s-math"><span>📐</span> Mathématiques</div>
+      <div class="subject-item" onclick="setSubject('spc',this)" id="s-spc"><span>⚗️</span> SPC</div>
+      <div class="subject-item" onclick="setSubject('snt',this)" id="s-snt"><span>💻</span> SNT</div>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="quick-label">Suggestions rapides</div>
+    <div id="quickList"></div>
+  </div>
+
+  <div class="main">
+    <div class="chat-area" id="chat">
+      <div class="welcome" id="welcome">
+        <div style="font-size:48px">🧪</div>
+        <h2>Prêt à t'aider en sciences</h2>
+        <p>Aucune clé API à entrer. Pose ta question en Maths, SPC ou SNT.</p>
+        <div id="setupBox" class="setup-box" style="display:none">
+          Colle une seule fois l’URL de ton Worker Cloudflare :
+          <input id="serverUrlInput" placeholder="https://assistant-scientifique.xxx.workers.dev" />
+          <button type="button" onclick="saveServerUrl()">Enregistrer le lien</button>
+        </div>
+        <div class="welcome-cards">
+          <div class="welcome-card" onclick="askQuick('Résoudre x²-5x+6=0')"><div>📐</div><strong>Maths</strong><div style="font-size:11px;color:var(--text3)">Équations, fonctions…</div></div>
+          <div class="welcome-card" onclick="askQuick('Expliquer la loi d\'Ohm')"><div>⚗️</div><strong>SPC</strong><div style="font-size:11px;color:var(--text3)">Physique, chimie…</div></div>
+          <div class="welcome-card" onclick="askQuick('Comment fonctionne le binaire ?')"><div>💻</div><strong>SNT</strong><div style="font-size:11px;color:var(--text3)">Internet, algorithmes…</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="input-area">
+      <div class="input-subject-bar">
+        <button class="mini-btn active" onclick="setMini('all',this)">🌐 Toutes</button>
+        <button class="mini-btn" onclick="setMini('math',this)">📐 Maths</button>
+        <button class="mini-btn" onclick="setMini('spc',this)">⚗️ SPC</button>
+        <button class="mini-btn" onclick="setMini('snt',this)">💻 SNT</button>
+      </div>
+      <div class="input-row">
+        <textarea id="userInput" rows="1" placeholder="Ta question scientifique…"
+          oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'"
+          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg();}"></textarea>
+        <button class="send-btn" id="sendBtn" onclick="sendMsg()">➤</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* Colle ici l'URL de ton Worker Cloudflare, exemple :
+   https://assistant-scientifique.TON-COMPTE.workers.dev
+*/
+let API_URL = localStorage.getItem('sci_worker_url') || 'https://assistant-scientifiquee.aboubacarsidiay.workers.dev';
+
+let currentSubject = 'all';
+let hasMessages = false;
+let history = [];
+
+const quickSuggestions = {
+  all: ['Résoudre x²-5x+6=0','La loi d\'Ohm','Le binaire expliqué','Calculer une vitesse','La dérivée de x²','Équilibrer H₂+O₂→H₂O','Qu\'est-ce qu\'Internet ?','Théorème de Pythagore'],
+  math: ['Résoudre ax²+bx+c=0','Dériver f(x)=x³+2x','Calculer une intégrale','Probabilités conditionnelles','Suites arithmétiques','Trigonométrie sin/cos/tan','Limite d\'une fonction','Géométrie dans l\'espace'],
+  spc: ['La loi d\'Ohm','Équilibrer une réaction','Moles et quantité de matière','Lois de Newton','La réfraction de la lumière','pH d\'une solution acide','Énergie cinétique','Tension et intensité'],
+  snt: ['C\'est quoi le binaire ?','Comment fonctionne Internet ?','Les adresses IP','Qu\'est-ce qu\'un algorithme ?','Données personnelles','Le protocole HTTP','Qu\'est-ce qu\'un pixel ?','La cybersécurité']
+};
+
+function updateQuickList() {
+  document.getElementById('quickList').innerHTML = quickSuggestions[currentSubject]
+    .map(s => `<div class="quick-item" onclick="askQuick('${s.replace(/'/g,"\\'")}')">↳ ${s}</div>`).join('');
+}
+function setSubject(s, btn) {
+  currentSubject = s;
+  ['all','math','spc','snt'].forEach(k => document.getElementById('s-'+k).className = 'subject-item');
+  btn.classList.add('active-'+s);
+  document.querySelectorAll('.mini-btn').forEach((b,i) => b.classList.toggle('active', ['all','math','spc','snt'][i] === s));
+  updateQuickList();
+}
+function setMini(s, btn) {
+  currentSubject = s;
+  document.querySelectorAll('.mini-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  ['all','math','spc','snt'].forEach(k => {
+    document.getElementById('s-'+k).className = 'subject-item' + (k===s ? ' active-'+s : '');
+  });
+  updateQuickList();
+}
+function askQuick(q) { document.getElementById('userInput').value = q; sendMsg(); }
+function cleanLatex(text) {
+  return String(text || '')
+    .replace(/\\\[|\\\]/g, '')
+    .replace(/\\\(|\\\)/g, '')
+    .replace(/\$\$/g, '')
+    .replace(/\$/g, '')
+    .replace(/\\begin\{[^}]+\}/g, '')
+    .replace(/\\end\{[^}]+\}/g, '')
+    .replace(/\\mathrm\{([^}]*)\}/g, '$1')
+    .replace(/\\text\{([^}]*)\}/g, '$1')
+    .replace(/\\frac\{([^}]*)\}\{([^}]*)\}/g, '($1)/($2)')
+    .replace(/\\sqrt\{([^}]*)\}/g, '√($1)')
+    .replace(/\\rightarrow|\\longrightarrow|\\to/g, ' → ')
+    .replace(/\\times/g, ' × ')
+    .replace(/\\cdot/g, ' · ')
+    .replace(/\\pm/g, ' ± ')
+    .replace(/\\,/g, ' ')
+    .replace(/\\;/g, ' ')
+    .replace(/\\quad/g, ' ')
+    .replace(/\\\\/g, '\n')
+    .replace(/\\_/g, '_')
+    .replace(/[{}]/g, '');
+}
+function format(text) {
+  return cleanLatex(String(text || ''))
+    .replace(/^\[(MATH|SPC|SNT|AI)\]\s*/i, '')
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/```([\s\S]*?)```/g, '<pre>$1</pre>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\n\n/g, '<br><br>').replace(/\n/g, '<br>');
+}
+function newChat() {
+  history = [];
+  hasMessages = false;
+  document.getElementById('chat').innerHTML = document.getElementById('welcome')
+    ? '' : '';
+  location.reload();
+}
+
+function saveServerUrl() {
+  const url = (document.getElementById('serverUrlInput').value || '').trim();
+  if (!url.startsWith('http')) {
+    alert('Colle une URL qui commence par https://');
+    return;
+  }
+  API_URL = url;
+  localStorage.setItem('sci_worker_url', url);
+  document.getElementById('setupBox').style.display = 'none';
+}
+if (!API_URL.startsWith('http')) {
+  document.getElementById('setupBox').style.display = 'block';
+}
+
+async function sendMsg() {
+  const input = document.getElementById('userInput');
+  const question = input.value.trim();
+  if (!question) return;
+  if (!API_URL.startsWith('http')) {
+    alert('Le serveur n’est pas encore configuré.');
+    return;
+  }
+  if (!hasMessages) { document.getElementById('welcome').style.display = 'none'; hasMessages = true; }
+  const chat = document.getElementById('chat');
+  const sendBtn = document.getElementById('sendBtn');
+  chat.innerHTML += `<div class="msg user"><div class="avatar user">👤</div><div class="msg-content"><div class="tag tag-user">Toi</div><div class="bubble user">${question.replace(/</g,'&lt;').replace(/\n/g,'<br>')}</div></div></div>`;
+  input.value = ''; sendBtn.disabled = true;
+  const loadId = 'load-' + Date.now();
+  chat.innerHTML += `<div class="msg" id="${loadId}"><div class="avatar ai">🔬</div><div class="msg-content"><div class="tag tag-ai">Réflexion…</div><div class="bubble ai loading">Je prépare ta réponse…</div></div></div>`;
+  chat.scrollTop = chat.scrollHeight;
+  try {
+    const resp = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question, subject: currentSubject, history })
+    });
+    const data = await resp.json();
+    if (!resp.ok || !data.answer) {
+      document.getElementById(loadId).innerHTML = `<div class="avatar ai">🔬</div><div class="msg-content"><div class="tag tag-err">Erreur</div><div class="bubble error">${data.error || 'Erreur serveur'}</div></div>`;
+    } else {
+      history.push({ role: 'user', content: question });
+      history.push({ role: 'assistant', content: data.answer });
+      if (history.length > 20) history = history.slice(-20);
+      document.getElementById(loadId).innerHTML = `<div class="avatar ai">🔬</div><div class="msg-content"><div class="tag tag-ai">Assistant</div><div class="bubble ai">${format(data.answer)}</div></div>`;
+    }
+  } catch (e) {
+    document.getElementById(loadId).innerHTML = `<div class="avatar ai">🔬</div><div class="msg-content"><div class="tag tag-err">Erreur réseau</div><div class="bubble error">${e.message}</div></div>`;
+  }
+  sendBtn.disabled = false;
+  chat.scrollTop = chat.scrollHeight;
+}
+updateQuickList();
+</script>
+</body>
+</html>
